@@ -1,4 +1,4 @@
-# flasklogintemplate
+# Flask Login Template
 A simple but useful flask login template to start.
 
 This a flask project based. Web development on Python.
