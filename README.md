@@ -7,7 +7,7 @@ We used flask_wtf, flask_sqlalchemy, and flask_login to make this project.
 
 This a simple Flask APP to register and login as user into a website.
 
-This an almost RAW project, there is just the necessary thigs to workout perfectly:
+This an almost RAW project, there is just the necessary things to work perfectly:
 Forms and its validations
 Database to save entries
 Queries and a log in and logout system with a "remember me" cookie.
