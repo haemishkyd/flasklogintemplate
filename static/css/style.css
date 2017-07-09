@@ -2,3 +2,9 @@ body {
     background-color: #262626;
     color: white;
 }
+a {
+	color: yellow;
+}
+a:visited {
+	color: blue;
+}
