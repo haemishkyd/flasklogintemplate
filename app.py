@@ -1,12 +1,15 @@
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_wtf import FlaskForm
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from flask_login import UserMixin, LoginManager, login_required, login_user, current_user, logout_user
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import InputRequired, Length, Email
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
-import os
+import os,sys,jwt
+from datetime import datetime,date,timedelta
 
 dbdir = "sqlite:///" + os.path.abspath(os.getcwd()) + "/database.db"
 
@@ -14,6 +17,9 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "SomeSecret"
 app.config["SQLALCHEMY_DATABASE_URI"] = dbdir
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+CORS(app)
+app.app_context().push()
+jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
 
@@ -26,6 +32,21 @@ class Users(UserMixin, db.Model):
     username = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
+    CurrentActivity = db.Column(db.Integer, nullable=False)
+
+class Activities(db.Model):
+    activityid = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(50), nullable=False)
+
+class ActivityProgress(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    #user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    #activity_id = db.Column(db.Integer, db.ForeignKey('activities.activityid'), nullable=False)
+    activity_id = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    distance = db.Column(db.Float, nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -46,14 +67,15 @@ class LoginForm(FlaskForm):
 @app.route("/")
 @login_required
 def index():
-    return render_template("index.html")
+    activities = Activities.query.all()
+    return render_template("index.html", activities=activities)
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     form = RegisterForm()
 
     if form.validate_on_submit():
-        hashed_pw = generate_password_hash(form.password.data, method="sha256")
+        hashed_pw = generate_password_hash(form.password.data, method="scrypt")
         new_user = Users(username=form.username.data, email=form.email.data, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
@@ -81,6 +103,90 @@ def logout():
     flash("You were logged out. See you soon!")
     return redirect(url_for("login"))
 
+@app.route("/api/activities", methods=["GET"])
+@jwt_required()
+def get_activities():
+    current_user = get_jwt_identity()
+    print(current_user)
+    activities = Activities.query.all()
+    activities_list = [{"activityid": activity.activityid, "description": activity.description} for activity in activities]
+    return jsonify(activities_list)
+
+@app.route("/api/login", methods=["POST"])
+def apilogin():
+    data = request.get_json()
+
+    if not data or not data.get("username") or not data.get("password"):
+        return jsonify({"error": "Invalid input"}), 400
+
+    user = Users.query.filter_by(username=data["username"]).first()
+
+    if user and check_password_hash(user.password, data["password"]):
+        login_user(user)
+        access_token = create_access_token(identity={'username': data["username"]})
+        return jsonify({"message": "Login successful", "token": access_token, "id": user.id}), 200
+
+    return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route("/api/add_activities_progress", methods=["POST"])
+@jwt_required()
+def add_user_activity():
+    data = request.get_json()
+
+    if not data or not data.get("user_id") or not data.get("activity_id") or not data.get("date") or not data.get("time") or not data.get("distance"):
+        return jsonify({"error": "Invalid input"}), 400
+    print(data)
+    try:
+        new_activity = ActivityProgress(
+            user_id=data["user_id"],
+            activity_id=data["activity_id"],
+            date=datetime.strptime(data["date"], "%Y-%m-%d").date(),
+            time=datetime.strptime(data["time"], "%H:%M:%S").time(),
+            distance=data["distance"]
+        )
+        print (new_activity.time)
+        db.session.add(new_activity)
+        db.session.commit()    
+        return jsonify({"message": "Activity added successfully"}), 201
+    except Exception as e:
+        print (str(e))
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/get_activities_progress/<int:user_id>", methods=["GET"])
+@jwt_required()
+def get_user_activities(user_id):
+    try:
+        # Get the current date
+        today = date.today()
+        # Get the first and last day of the current month
+        first_day_of_month = today.replace(day=1)
+        last_day_of_month = (today.replace(month=today.month % 12 + 1, day=1) - timedelta(days=1))
+
+        # Query the activities for the specified user and current month
+        activities = ActivityProgress.query.filter(
+            ActivityProgress.user_id == user_id,
+            ActivityProgress.date >= first_day_of_month,
+            ActivityProgress.date <= last_day_of_month
+        ).all()
+        print (activities)
+   
+        # Convert the activities to a list of dictionaries
+        activities_list = [
+            {
+                "id": activity.id,
+                "activity_id": activity.activity_id,
+                "date": activity.date.strftime("%Y-%m-%d"),
+                "time": activity.time.strftime("%H:%M:%S"),
+                "distance": activity.distance
+            }
+            for activity in activities
+        ]
+
+        return jsonify(activities_list), 200
+    except Exception as e:
+        print("Error:", str(e))
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == "__main__":
     db.create_all()
     app.run(debug=True)

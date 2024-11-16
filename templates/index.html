@@ -5,4 +5,11 @@ Home
 {% block content %}
 <h1>Welcome, {{ current_user.username }}!</h1>
 <a href="/logout">Log Out</a>
+
+<h2>Activities</h2>
+<ul>
+    {% for activity in activities %}
+    <li>{{ activity.description }}</li>
+    {% endfor %}
+</ul>
 {% endblock %}
