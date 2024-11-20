@@ -1,0 +1,18 @@
+
+create table users (cid INTEGER, username VARCHAR(50), email VARCHAR(50), password VARCHAR(80), CurrentActivity INTEGER, PRIMARY KEY(cid));
+
+create table activities (ActivityID INTEGER, Description TEXT, PRIMARY KEY(ActivityID));
+
+CREATE TABLE activityprogress (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    activity_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    distance FLOAT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(id),
+    FOREIGN KEY (activity_id) REFERENCES Activities(activityid)
+);
+
+insert into activities (ActivityID, Description) values (0,"Running/Walking/Hike"),(1,"Gym/Crossfit/Yoga");
+insert into activities (ActivityID, Description) values (2,"Cycling"),(3,"Swimming"),(3,"Other");

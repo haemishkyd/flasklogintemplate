@@ -1,0 +1,15 @@
+# DO NOT include azure-functions-worker in this file
+# The Python Worker is managed by Azure Functions platform
+# Manually managing azure-functions-worker may cause unexpected issues
+
+azure-functions
+Flask
+Flask-Migrate
+Flask-SQLAlchemy
+flask_wtf
+flask_cors
+flask_login
+flask_jwt_extended
+psycopg2
+python-dotenv
+SQLAlchemy

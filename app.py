@@ -11,12 +11,25 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import os,sys,jwt
 from datetime import datetime,date,timedelta
 
-dbdir = "sqlite:///" + os.path.abspath(os.getcwd()) + "/database.db"
 
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "SomeSecret"
-app.config["SQLALCHEMY_DATABASE_URI"] = dbdir
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+app = Flask(__name__, static_folder='static')
+
+# WEBSITE_HOSTNAME exists only in production environment
+if 'WEBSITE_HOSTNAME' not in os.environ:
+    # local development, where we'll use environment variables
+    print("Loading config.development and environment variables from .env file.")
+    app.config.from_object('azureproject.development')
+else:
+    # production
+    print("Loading config.production.")
+    app.config.from_object('azureproject.production')
+
+app.config.update(
+    SQLALCHEMY_DATABASE_URI=app.config.get('DATABASE_URI'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+)
+
 CORS(app)
 app.app_context().push()
 jwt = JWTManager(app)
@@ -27,26 +40,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(80), nullable=False)
-    CurrentActivity = db.Column(db.Integer, nullable=False)
-
-class Activities(db.Model):
-    activityid = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String(50), nullable=False)
-
-class ActivityProgress(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    #user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
-    #activity_id = db.Column(db.Integer, db.ForeignKey('activities.activityid'), nullable=False)
-    activity_id = db.Column(db.Integer, nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    distance = db.Column(db.Float, nullable=False)
+from models import Users, Activities, ActivityProgress
 
 @login_manager.user_loader
 def load_user(user_id):

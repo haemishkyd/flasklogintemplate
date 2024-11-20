@@ -16,4 +16,5 @@ We added a few static files (css, js and favicon) just to make the project easie
 
 You can follow the tutorial to make more changes at https://www.youtube.com/channel/UCjsY8MKWfIY88Bfo7_0zXTw
 
+Run this by using *flask run*
 Good luck! <3
