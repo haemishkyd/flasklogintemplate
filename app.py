@@ -40,6 +40,10 @@ login_manager.login_view = "login"
 
 from models import Users, Activities, ActivityProgress
 
+numofUsers = db.session.query(Users).count()
+print("Number of users: ", numofUsers)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return Users.query.get(int(user_id))
