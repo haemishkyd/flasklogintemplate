@@ -11,8 +11,6 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import os,sys,jwt
 from datetime import datetime,date,timedelta
 
-
-
 app = Flask(__name__, static_folder='static')
 
 # WEBSITE_HOSTNAME exists only in production environment
