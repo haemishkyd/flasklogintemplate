@@ -7,6 +7,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import InputRequired, Length, Email
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_migrate import Migrate
 
 import os,sys,jwt
 from datetime import datetime,date,timedelta
@@ -33,6 +34,9 @@ app.app_context().push()
 jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
+
+# Enable Flask-Migrate commands "flask db init/migrate/upgrade" to work
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
