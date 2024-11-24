@@ -44,8 +44,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# numofUsers = db.session.query(Users).count()
-# print("Number of users: ", numofUsers)
+numofUsers = db.session.query(Users).count()
+print("Number of users: ", numofUsers)
 
 
 @login_manager.user_loader
