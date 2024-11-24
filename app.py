@@ -35,10 +35,10 @@ jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
 
-from models import Users, Activities, ActivityProgress
-
 # Enable Flask-Migrate commands "flask db init/migrate/upgrade" to work
 migrate = Migrate(app, db)
+
+from models import Users, Activities, ActivityProgress
 
 login_manager = LoginManager()
 login_manager.init_app(app)
