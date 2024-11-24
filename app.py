@@ -35,14 +35,14 @@ jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
 
+from models import Users, Activities, ActivityProgress
+
 # Enable Flask-Migrate commands "flask db init/migrate/upgrade" to work
 migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-
-from models import Users, Activities, ActivityProgress
 
 # numofUsers = db.session.query(Users).count()
 # print("Number of users: ", numofUsers)
