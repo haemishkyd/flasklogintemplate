@@ -13,3 +13,4 @@ flask_jwt_extended
 psycopg2
 python-dotenv
 SQLAlchemy
+email_validator

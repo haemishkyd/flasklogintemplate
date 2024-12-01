@@ -28,6 +28,7 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=app.config.get('DATABASE_URI'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
 )
+app.secret_key = 'super secret key'
 
 CORS(app)
 app.app_context().push()
@@ -76,7 +77,7 @@ def signup():
 
     if form.validate_on_submit():
         hashed_pw = generate_password_hash(form.password.data, method="scrypt")
-        new_user = Users(username=form.username.data, email=form.email.data, password=hashed_pw)
+        new_user = Users(username=form.username.data, email=form.email.data, password=hashed_pw, CurrentActivity=0)
         db.session.add(new_user)
         db.session.commit()
         flash("You've been registered successfully, now you can log in.")
