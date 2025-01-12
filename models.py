@@ -14,6 +14,9 @@ class Users(UserMixin, db.Model):
 
     def __str__(self):
         return self.name
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Activities(db.Model):
     __tablename__ = 'activities'

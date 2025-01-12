@@ -8,7 +8,7 @@ from wtforms.validators import InputRequired, Length, Email
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate
-
+import logging
 import os,sys,jwt
 from datetime import datetime,date,timedelta
 
@@ -28,7 +28,9 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=app.config.get('DATABASE_URI'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
 )
-app.secret_key = 'super secret key'
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['CORS_HEADERS'] = 'Content-Type'
+app.config['SESSION_TYPE'] = 'filesystem'
 
 CORS(app)
 app.app_context().push()
@@ -47,6 +49,7 @@ login_manager.login_view = "login"
 
 numofUsers = db.session.query(Users).count()
 print("Number of users: ", numofUsers)
+print("Everything has started.")
 
 
 @login_manager.user_loader
@@ -97,22 +100,6 @@ def login():
         return "Your credentials are invalid."
     return render_template("login.html", form=form)
 
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    flash("You were logged out. See you soon!")
-    return redirect(url_for("login"))
-
-@app.route("/api/activities", methods=["GET"])
-@jwt_required()
-def get_activities():
-    current_user = get_jwt_identity()
-    print(current_user)
-    activities = Activities.query.all()
-    activities_list = [{"activityid": activity.activityid, "description": activity.description} for activity in activities]
-    return jsonify(activities_list)
-
 @app.route("/api/login", methods=["POST"])
 def apilogin():
     data = request.get_json()
@@ -123,11 +110,34 @@ def apilogin():
     user = Users.query.filter_by(username=data["username"]).first()
 
     if user and check_password_hash(user.password, data["password"]):
-        login_user(user)
-        access_token = create_access_token(identity={'username': data["username"]})
+        # login_user(user)
+        access_token = create_access_token(identity=data["username"])
+        print("Login successful - token: ", access_token)
         return jsonify({"message": "Login successful", "token": access_token, "id": user.id}), 200
 
     return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("You were logged out. See you soon!")
+    return redirect(url_for("login"))
+
+@app.route("/api/activities", methods=["GET"])
+@jwt_required()
+def get_activities():     
+    current_user = get_jwt_identity()   
+    if current_user is not None:        
+        print(f"Current User: {current_user}")
+        print (current_user)
+        activities = Activities.query.all()
+        activities_list = [{"activityid": activity.activityid, "description": activity.description} for activity in activities]
+        return jsonify(activities_list)
+    else:
+        username = None    
+        print ("Not logged in.")
+        return jsonify({"Error"})
 
 @app.route("/api/add_activities_progress", methods=["POST"])
 @jwt_required()
@@ -157,6 +167,7 @@ def add_user_activity():
 @jwt_required()
 def get_user_activities(user_id):
     try:
+        print ("User", user_id)
         # Get the current date
         today = date.today()
         # Get the first and last day of the current month
@@ -165,9 +176,7 @@ def get_user_activities(user_id):
 
         # Query the activities for the specified user and current month
         activities = ActivityProgress.query.filter(
-            ActivityProgress.user_id == user_id,
-            ActivityProgress.date >= first_day_of_month,
-            ActivityProgress.date <= last_day_of_month
+            ActivityProgress.user_id == user_id
         ).all()
         print (activities)
    
@@ -190,4 +199,5 @@ def get_user_activities(user_id):
     
 if __name__ == "__main__":
     db.create_all()
+    logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
