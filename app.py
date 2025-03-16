@@ -27,10 +27,11 @@ else:
 app.config.update(
     SQLALCHEMY_DATABASE_URI=app.config.get('DATABASE_URI'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SECRET_KEY='your_secret_key',
+    CORS_HEADERS='Content-Type',
+    SESSION_TYPE='filesystem',
+     JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=1)  # Set the token to expire in 1 hour
 )
-app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['CORS_HEADERS'] = 'Content-Type'
-app.config['SESSION_TYPE'] = 'filesystem'
 
 CORS(app)
 app.app_context().push()
@@ -174,20 +175,29 @@ def get_user_activities(user_id):
         first_day_of_month = today.replace(day=1)
         last_day_of_month = (today.replace(month=today.month % 12 + 1, day=1) - timedelta(days=1))
 
-        # Query the activities for the specified user and current month
-        activities = ActivityProgress.query.filter(
-            ActivityProgress.user_id == user_id
-        ).all()
-        print (activities)
+        # # Query the activities for the specified user and current month
+        # activities = ActivityProgress.query.filter(
+        #     ActivityProgress.user_id == user_id
+        # ).all()
+        # print (activities)
+
+        activities = db.session.query(ActivityProgress, Activities
+            ).filter(
+                ActivityProgress.user_id == user_id
+            ).filter(
+                ActivityProgress.activity_id == Activities.activityid
+            ).all()
+        print(activities)
    
         # Convert the activities to a list of dictionaries
         activities_list = [
             {
-                "id": activity.id,
-                "activity_id": activity.activity_id,
-                "date": activity.date.strftime("%Y-%m-%d"),
-                "time": activity.time.strftime("%H:%M:%S"),
-                "distance": activity.distance
+                "id": activity.ActivityProgress.id,
+                "activity_id": activity.ActivityProgress.activity_id,
+                "activity_desc":activity.Activities.description,
+                "date": activity.ActivityProgress.date.strftime("%Y-%m-%d"),
+                "time": activity.ActivityProgress.time.strftime("%H:%M:%S"),
+                "distance": activity.ActivityProgress.distance
             }
             for activity in activities
         ]
